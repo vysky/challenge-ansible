@@ -1,4 +1,4 @@
-# turning this lab into ansible playbook
+# turning the concept (create, moving and deleting files) of this lab into ansible playbook
 # https://learn.acloud.guru/handson/8d1946ab-3035-4e5f-b735-d662fc761482/course/87e08bad-9655-4a7c-9f07-5dd44149b837
 
 ---
@@ -13,6 +13,7 @@
       - "{{ var_workingdir }}/files.txt"
     tasks:
     - name: task 1
+      # refer to https://docs.ansible.com/ansible/latest/user_guide/playbooks_blocks.html
       block:
         - name: task 1 - check if dev directory exist
           stat:
@@ -30,6 +31,7 @@
         - name: task 2 - create files directory
           file:
             path: "{{ var_devdir }}"
+            # refer to https://docs.ansible.com/ansible/latest/collections/ansible/builtin/file_module.html#parameter-state
             state: directory
           when: not stat_devdir_exist.stat.exists
       rescue:
@@ -45,7 +47,9 @@
         - name: task 3 - create files
           file:
             path: "{{ var_devdir }}/{{ item }}"
+            # refer to https://docs.ansible.com/ansible/latest/collections/ansible/builtin/file_module.html#parameter-state
             state: touch
+          # refer to https://docs.ansible.com/ansible/latest/user_guide/playbooks_loops.html
           loop: "{{ files }}"
           notify: test
       rescue:
@@ -89,7 +93,9 @@
           copy:
             src: "{{ item }}"
             dest: "{{ var_stagingdir }}"
+            # refer to https://docs.ansible.com/ansible/latest/collections/ansible/builtin/copy_module.html
             remote_src: yes
+          # refer to https://docs.ansible.com/ansible/latest/collections/ansible/builtin/fileglob_lookup.html
           with_fileglob:
             - "{{ var_devdir }}/*"
       rescue:
@@ -143,7 +149,10 @@
         - name: task 10 - delete created files and directories
           file:
             path: "{{ item }}"
+            # refer to https://docs.ansible.com/ansible/latest/collections/ansible/builtin/file_module.html#parameter-state
             state: absent
+          # refer to https://docs.ansible.com/ansible/latest/user_guide/playbooks_loops.html
+          # and https://docs.ansible.com/ansible/latest/collections/ansible/builtin/items_lookup.html
           with_items:
           - "{{ var_devdir }}"
           - "{{ var_stagingdir }}"
