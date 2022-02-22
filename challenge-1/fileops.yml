@@ -1,0 +1,100 @@
+# turning this lab into ansible playbook
+# https://learn.acloud.guru/handson/8d1946ab-3035-4e5f-b735-d662fc761482/course/87e08bad-9655-4a7c-9f07-5dd44149b837
+
+---
+  - hosts: localhost
+    become: yes
+    vars:
+      var_workingdir: ~/Downloads/devops/ansible/challenges/1-files-operations
+      var_devdir: "{{ var_workingdir }}/1-dev"
+      var_stagingdir: "{{ var_workingdir }}/2-staging"
+      var_proddir: "{{ var_workingdir }}/3-prod"
+    vars_files:
+      - "{{ var_workingdir }}/files.txt"
+    tasks:
+    - name: task 1
+      block:
+        - name: task 1 - check if dev directory exist
+          stat:
+            path: "{{ var_devdir }}"
+          register: stat_devdir_exist
+      rescue:
+        - name: task 1 - error
+          debug:
+            msg: "task 1 error"
+      always:
+        - name: task 1 - logging
+          shell: echo "task 1 completed" > logs.txt
+    - name: task 2
+      block:
+        - name: task 2 - create files directory
+          file:
+            path: "{{ var_devdir }}"
+            state: directory
+          when: not stat_devdir_exist.stat.exists
+      rescue:
+        - name: task 2 - error
+          debug:
+            msg: "task 2 error"
+      always:
+        - name: task 2 - logging
+          shell: echo "task 2 completed" >> logs.txt
+    - name: task 3
+      block:
+        - name: task 3 - create files
+          file:
+            path: "{{ var_devdir }}/{{ item }}"
+            state: touch
+          loop: "{{ files }}"
+          notify: test
+      rescue:
+        - name: task 3 - error
+          debug:
+            msg: "task 3 error"
+      always:
+        - name: task 3 - logging
+          shell: echo "task 3 completed" >> logs.txt
+    - name: task 4
+      block:
+        - name: task 4 - check if stage directory exist
+          stat:
+            path: "{{ var_stagingdir }}"
+          register: stat_stagingdir_exist
+      rescue:
+        - name:
+      always:
+        -name:
+    - name: task 5
+      block:
+        # copy using ansible built in copy command
+        - name: task 5 - create staging directory
+          copy:
+            src: "{{ var_devdir }}/{{ item }}"
+            dest: "{{ var_stagingdir }}"
+          with_fileglob:
+            - "{{ var_devdir }}/* "
+      rescue:
+      always:
+    - name: task 6
+      block:
+        - name: task 6 - copy files from dev to staging
+      rescue:
+      always:
+    - name: task x
+      block:
+        - name: task x - delete files and directories
+          file:
+            path: "{{ var_devdir }}"
+            state: absent
+      rescue:
+        - name: task x - error
+          debug:
+            msg: echo "task x error"
+      always:
+        - name: task x - logging
+          shell: echo "task x completed" >> logs.txt
+    handlers:
+    - name: display message
+      debug:
+        msg: "created files"
+      listen: test
