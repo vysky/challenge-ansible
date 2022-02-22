@@ -41,6 +41,7 @@
           shell: echo "task 2 completed" >> logs.txt
     - name: task 3
       block:
+        # create files based on the items in files.txt
         - name: task 3 - create files
           file:
             path: "{{ var_devdir }}/{{ item }}"
@@ -69,7 +70,6 @@
           shell: echo "task 4 completed" >> logs.txt
     - name: task 5
       block:
-        # copy using ansible built in copy command
         - name: task 5 - create staging directory
           file:
             path: "{{ var_stagingdir }}"
@@ -84,6 +84,7 @@
           shell: echo "task 5 completed" >> logs.txt
     - name: task 6
       block:
+        # copy files using ansible built in copy command
         - name: task 6 - copy files from dev to staging
           copy:
             src: "{{ item }}"
@@ -98,9 +99,48 @@
       always:
         - name: task 6 - logging
           shell: echo "task 6 completed" >> logs.txt
-    - name: task x
+    - name: task 7
       block:
-        - name: task x - delete files and directories
+        - name: task 7 - check if prod direcotry exist
+          stat:
+            path: "{{ var_proddir }}"
+          register: stat_proddir_exist
+      rescue:
+        - name: task 7 - error
+          debug:
+            msg: "task 7 error"
+      always:
+        - name: task 7 - logging
+          shell: echo "task 7 completed" >> logs.txt
+    - name: task 8
+      block:
+        - name: task 8 - create prod directory
+          file:
+            path: "{{ var_proddir }}"
+            state: directory
+          when: not stat_proddir_exist.stat.exists
+      rescue:
+        - name: task 8 - error
+          debug:
+            msg: "task 8 error"
+      always:
+        - name: task 8 - logging
+          shell: echo "task 8 completed" >> logs.txt
+    - name: task 9
+      block:
+        # copy files using shell command
+        - name: task 9 - copy files from staging to prod
+          shell: "cp {{ var_stagingdir }}/* {{ var_proddir }}"
+      rescue:
+        - name: task 9 - error
+          debug:
+            msg: "task 9 error"
+      always:
+        - name: task 9 - logging
+          shell: echo "task 9 completed" >> logs.txt
+    - name: task 10
+      block:
+        - name: task 10 - delete created files and directories
           file:
             path: "{{ item }}"
             state: absent
@@ -108,13 +148,15 @@
           - "{{ var_devdir }}"
           - "{{ var_stagingdir }}"
           - "{{ var_proddir }}"
+          - logs.txt
       rescue:
-        - name: task x - error
+        - name: task 10 - error
           debug:
-            msg: echo "task x error"
+            msg: "task 10 error"
       always:
-        - name: task x - logging
-          shell: echo "task x completed" >> logs.txt
+        - name: task 10 - logging
+          debug:
+            msg: "deleted"
     handlers:
     - name: display message
       debug:
