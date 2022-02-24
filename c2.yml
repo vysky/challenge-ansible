@@ -1,0 +1,14 @@
+---
+  - host:
+    become: yes
+    vars:
+    tasks:
+      - name:
+        block:
+          - name:
+        rescue:
+          - name:
+        always:
+          - name:
+    handlers:
+      - name:
