@@ -1,25 +1,12 @@
-# turning the concept (create, moving and deleting files) of this lab into ansible playbook
 # https://learn.acloud.guru/handson/8d1946ab-3035-4e5f-b735-d662fc761482/course/87e08bad-9655-4a7c-9f07-5dd44149b837
 
-# block, rescue, always
 # https://docs.ansible.com/ansible/latest/user_guide/playbooks_blocks.html
-
-# state: absent, state: touch, state: directory
-# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/file_module.html#parameter-state
-
-# copy
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/file_module.html
 # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/copy_module.html
-
-# loop
 # https://docs.ansible.com/ansible/latest/user_guide/playbooks_loops.html
-
-# with_items
 # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/items_lookup.html
-
-# with_fileglob
 # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/fileglob_lookup.html
 
-# other links
 # https://phoenixnap.com/kb/ansible-create-file
 
 ---
@@ -31,7 +18,7 @@
       var_stagingdir: "{{ var_workingdir }}/2-staging"
       var_proddir: "{{ var_workingdir }}/3-prod"
     vars_files:
-      - "{{ var_workingdir }}/files.txt"
+      - users.txt
     tasks:
     - name: task 0
       block:
@@ -105,7 +92,7 @@
           file:
             path: "{{ var_devdir }}/{{ item }}"
             state: touch
-          loop: "{{ files }}"
+          loop: "{{ users }}"
           notify: handler_created
       rescue:
         - name: task 3 - error

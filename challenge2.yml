@@ -1,0 +1,89 @@
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/user_module.html
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/group_module.html
+
+---
+  - hosts: all
+    become: yes
+    vars:
+      var_groups:
+        - management
+        - sales
+        - operations
+      var_all:
+        - jen
+        - william
+      var_s:
+        - matt
+        - sam
+        - anne
+        - danny
+      var_o:
+        - matt
+        - sam
+    vars_files:
+      - users.txt
+    tasks:
+      - name: create users and groups
+        block:
+          - name: create users
+            user:
+              name: "{{ item }}"
+              state: present
+            loop: "{{ users }}"
+          - name: create groups
+            group:
+              name: "{{ item }}"
+              state: present
+            loop: "{{ var_groups }}"
+          - name: assign group - all
+            user:
+              name: "{{ item }}"
+              groups: "{{ var_groups }}"
+              append: yes
+            loop: "{{ var_all }}"
+          - name: assign group - sales
+            user:
+              name: "{{ item }}"
+              groups: sales
+              append: yes
+            loop: "{{ var_s }}"
+          - name: assign group - operations
+            user:
+              name: "{{ item }}"
+              groups: operations
+              append: yes
+            loop: "{{ var_o }}"
+          - name: log - clear
+            # using true instead of echo will result in no empty 1st line
+            shell: true > challenge2log.txt
+          - name: log
+            shell: groups {{ item }} >> challenge2log.txt
+            loop: "{{ users }}"
+        rescue:
+          - name: create - error
+            debug:
+              msg: "create - error"
+        always:
+          - name: create - no error
+            debug:
+              msg: "create - no error"
+      - name: remove created users and groups
+        block:
+          - name: remove users
+            user:
+              name: "{{ item }}"
+              state: absent
+            loop: "{{ users }}"
+          - name: remove groups
+            group:
+              name: "{{ item }}"
+              state: absent
+            loop: "{{ var_groups }}"
+        rescue:
+          - name: remove - error
+            debug:
+              msg: "remove - error"
+        always:
+          - name: remove - no error
+            debug:
+              msg: "remove - no error"
