@@ -116,15 +116,9 @@
           shell: echo "task 3 completed" >> logs.txt
     - name: task 4
       block:
-        # copy files using ansible built in copy command
-        - name: task 4 - copy files from dev to staging
-          copy:
-            src: "{{ item }}"
-            dest: "{{ var_stagingdir }}"
-            remote_src: yes
-          # copy files matching a pattern, in this case, all files since wildcard
-          with_fileglob:
-            - "{{ var_devdir }}/*"
+        # copy and rename files using shell
+        - name: task 4 - copy and rename files from dev to staging
+          shell: "cp {{ var_devdir }}/* {{ var_stagingdir }}; for f in 2-staging/* ; do cp $f ${f}-ready ; done"
           notify: handler_renamed
       rescue:
         - name: task 4 - error
@@ -132,12 +126,19 @@
             msg: "task 4 error"
       always:
         - name: task 4 - logging
-          shell: echo "task 6 completed" >> logs.txt
+          shell: echo "task 4 completed" >> logs.txt
     - name: task 5
       block:
-        # copy files using shell command
         - name: task 5 - copy files from staging to prod
-          shell: "cp {{ var_stagingdir }}/* {{ var_proddir }}"
+          copy:
+            src: "{{ item }}"
+            dest: "{{ var_stagingdir }}"
+            remote_src: yes
+          # copy files matching a pattern, in this case, all files since wildcard
+          with_fileglob:
+            - "{{ var_stagingdir }}/*"
+          # another way to copy files using shell
+          # shell: "cp {{ var_stagingdir }}/* {{ var_proddir }}"
           notify: handler_copied
       rescue:
         - name: task 5 - error
