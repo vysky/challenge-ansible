@@ -1,0 +1,120 @@
+# created based on the lab below, and to be self contained without the need to start the lab
+# https://learn.acloud.guru/handson/8d1946ab-3035-4e5f-b735-d662fc761482/course/87e08bad-9655-4a7c-9f07-5dd44149b837
+
+---
+  - hosts: all
+    become: yes
+    vars:
+      var_log: "challenge1log.txt"
+      var_workingdir: ./challenge1
+      var_practicedir: "{{ var_workingdir }}/practice"
+      var_reportdir: "{{ var_workingdir }}/report"
+      var_dirs:
+        - "{{ var_workingdir }}"
+        - "{{ var_practicedir }}"
+        - "{{ var_reportdir }}"
+      var_copy:
+        - "j*"
+      var_rename:
+        - bruce
+        - brucelee
+      var_rm_pattern:
+        - anne
+        - "j*"
+        - "*m"
+    vars_files:
+      - users.txt
+    tasks:
+      - name: create
+        block:
+          # ---------- create tasks ----------
+          - name: create folders
+            file:
+              path: "{{ item }}"
+              state: directory
+            loop: "{{ var_dirs }}"
+          - name: create files in practice directory
+            file:
+              path: "{{ var_practicedir }}/{{ item }}"
+              state: touch
+            loop: "{{ users }}"
+          # ----------- copy tasks ----------
+          - name: copy files matching "{{ var_copy[0] }}" from practice to report
+            copy:
+              src: "{{ item }}"
+              dest: "{{ var_reportdir }}"
+              remote_src: yes
+            with_fileglob:
+              - "{{ var_practicedir }}/{{ var_copy[0] }}"
+          # ---------- move, rename and verify tasks ----------
+          - name: move and rename "{{ var_rename[0] }}" to "{{ var_rename[1] }}" from practice to report
+            shell: mv "{{ var_practicedir }}/{{ var_rename[0] }}" "{{ var_reportdir }}/{{ var_rename[1] }}"
+          - name: check if "{{ var_rename[0] }}" exist in practice
+            stat:
+              path: "{{ var_practicedir }}/{{ var_rename[0] }}"
+            register: reg_oldstat
+          - name: check if "{{ var_rename[1] }}" exist in report
+            stat:
+              path: "{{ var_reportdir }}/{{ var_rename[1] }}"
+            register: reg_newstat
+          # two methods to verify
+          - name: verify if moved and renamed 1
+            debug:
+              msg: "{{ var_rename[1] }} exist in report"
+            # debug message will print only if the old file does not exist in practice and new file exist in report
+            when: ( not reg_oldstat.stat.exists ) and ( reg_newstat.stat.exists )
+          - name: verify if moved and renamed 2
+            # "-" beside "%" indicate to trim the whitespace from the statements, "+" or empty to preserve
+            debug:
+              msg: "{%- if not reg_oldstat.stat.exists and reg_newstat.stat.exists -%}
+                      {{ var_rename[1] }} exist in report
+                    {%- else -%}
+                      {{ var_rename[1] }} does not exist in report
+                    {%- endif -%}"
+          # ---------- remove tasks ----------
+          # find files using patterns in var_rm and register the files in reg_rm
+          - name: find files
+            find:
+              paths: "{{ var_practicedir }}"
+              pattern: "{{ var_rm_pattern }}"
+            register: reg_rm
+          - name: remove files
+            file:
+              path: "{{ item.path }}"
+              state: absent
+            # loop: "{{ reg_rm.files }}" also works
+            with_items: "{{ reg_rm.files }}"
+          # ---------- log tasks ----------
+          # using true instead of echo will result in no empty 1st line
+          # if using shell, variables do not need quotes
+          - name: log - clear
+            shell: true > {{ var_log }}
+          - name: log - content of working directory
+            shell: ls -al {{ var_workingdir }} >> {{ var_log }}
+          - name: log - content of practice directory
+            shell: ls -al {{ var_practicedir }} >> {{ var_log }}
+          - name: log - content of report directory
+            shell: ls -al {{ var_reportdir }} >> {{ var_log }}
+        rescue:
+          - name: create - error
+            debug:
+              msg: "create - error"
+        always:
+          - name: create - no error
+            debug:
+              msg: "create - no error"
+      - name: remove
+        block:
+          - name: remove folders
+            file:
+              name: "{{ item }}"
+              state: absent
+            loop: "{{ var_dirs }}"
+        rescue:
+          - name: remove - error
+            debug:
+              msg: "remove - error"
+        always:
+          - name: remove - no error
+            debug:
+              msg: "remove - no error"

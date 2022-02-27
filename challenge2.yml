@@ -5,6 +5,7 @@
   - hosts: all
     become: yes
     vars:
+      var_log: "challenge2log.txt"
       var_groups:
         - management
         - sales
@@ -25,39 +26,44 @@
     tasks:
       - name: create users and groups
         block:
+          # ---------- create user tasks ----------
           - name: create users
             user:
               name: "{{ item }}"
               state: present
             loop: "{{ users }}"
+          # ---------- create group tasks ----------
           - name: create groups
             group:
               name: "{{ item }}"
               state: present
             loop: "{{ var_groups }}"
-          - name: assign group - all
+          # ---------- add user to group tasks ----------
+          - name: add user to group - all
             user:
               name: "{{ item }}"
               groups: "{{ var_groups }}"
               append: yes
             loop: "{{ var_all }}"
-          - name: assign group - sales
+          - name: add user to group - sales
             user:
               name: "{{ item }}"
               groups: sales
               append: yes
             loop: "{{ var_s }}"
-          - name: assign group - operations
+          - name: add user to group - operations
             user:
               name: "{{ item }}"
               groups: operations
               append: yes
             loop: "{{ var_o }}"
+          # ---------- log tasks ----------
+          # using true instead of echo will result in no empty 1st line
+          # if using shell, variables do not need quotes
           - name: log - clear
-            # using true instead of echo will result in no empty 1st line
-            shell: true > challenge2log.txt
+            shell: true > {{ var_log }}
           - name: log
-            shell: groups {{ item }} >> challenge2log.txt
+            shell: groups {{ item }} >> {{ var_log }}
             loop: "{{ users }}"
         rescue:
           - name: create - error
