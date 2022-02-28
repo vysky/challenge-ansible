@@ -72,7 +72,7 @@
                       {{ var_rename[1] }} does not exist in report
                     {%- endif -%}"
           # ---------- remove tasks ----------
-          # find files using patterns in var_rm and register the files in reg_rm
+          # find files using patterns in var_rm_pattern and register the files in reg_rm
           - name: find files
             find:
               paths: "{{ var_practicedir }}"
