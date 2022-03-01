@@ -1,9 +1,71 @@
-https://data.gov.sg/dataset/graduates-from-university-first-degree-courses-by-type-of-course
+# https://data.gov.sg/dataset/universities-intake-enrolment-and-graduates-by-course
+# https://data.gov.sg/dataset/polytechnics-intake-enrolment-and-graduates-by-course
 
-https://data.gov.sg/dataset/ngee-ann-polytechnic-full-time-diploma-annual?resource_id=bdfda26c-b5e3-4981-9754-3e83717384e6
-
-https://data.gov.sg/dataset/nanyang-polytechnic-full-time-diploma-courses
-
-https://data.gov.sg/dataset/temasek-polytechnic-full-time-courses-annual?resource_id=f2ac1bbb-a707-407a-9dc3-1836b6741d02
-
-https://data.gov.sg/dataset/singapore-polytechnic-diploma-plus-programmes-annual
+---
+  - hosts: all
+    become: yes
+    vars:
+      var_resources:
+        # MF for male and female
+        univ: https://data.gov.sg/api/action/datastore_search?resource_id=115bf8a7-46df-466c-b7fc-375ef3c1b425&q=MF+Information
+        poly: https://data.gov.sg/api/action/datastore_search?resource_id=f358cf0d-61fa-4eeb-93a2-1eca971cf1a4&q=MF+Information
+    tasks:
+    # json method
+    - name:
+      block:
+        - name: univ - register json data
+          # store the json output of the url to the register reg_univ
+          uri:
+            url: "{{ var_resources.univ }}"
+            body_format: json
+          register: reg_univ
+        - name: univ - find and sum the intake, enrolment and graduates across the years
+          set_fact:
+            #
+            # "set_fact" is similar to declaring variables, please correct me if i am wrong
+            #
+            # "reg_univ.json.result.records" is use to access the fields in the json data
+            # in this case it will access the "records" data by going through reg_univ > json > result > records
+            # for better vitualization, need to check the json output from the url
+            #
+            # https://jinja.palletsprojects.com/en/latest/templates/#jinja-filters.map
+            # "map(attribute='intake')" is use to filter a sequence of objects in a list based on the attribute provided
+            # in this case, it will return the intake's value of different years (as the json data is separated by year) in a list
+            # "map('int')" convert the list of objects returned from "map(attribute='intake')" into int
+            # "| int" can only use for single object, will not work in list and vice versa
+            # there is no need use "list" but looks nice if not summing
+            # "sum" is use to sum all the intake values (in int) in the list
+            #
+            fact_univ_intake: "{{ reg_univ.json.result.records | map(attribute='intake') | map('int') | list | sum }}"
+            fact_univ_enrolment: "{{ reg_univ.json.result.records | map(attribute='enrolment') | map('int') | list | sum }}"
+            fact_univ_graduates: "{{ reg_univ.json.result.records | map(attribute='graduates') | map('int') | list | sum }}"
+        - name: poly - register json data
+          uri:
+            url: "{{ var_resources.poly }}"
+            body_format: json
+          register: reg_poly
+        - name: poly - find and sum the intake, enrolment and graduates across the years
+          set_fact:
+            fact_poly_intake: "{{ reg_poly.json.result.records | map(attribute='intake') | map('int') | list | sum }}"
+            fact_poly_enrolment: "{{ reg_poly.json.result.records | map(attribute='enrolment') | map('int') | list | sum }}"
+            fact_poly_graduates: "{{ reg_poly.json.result.records | map(attribute='graduates') | map('int') | list | sum }}"
+        - name: log - university
+          debug:
+            msg: "Univerity - Intake - {{ fact_univ_intake }}, Enrolment - {{ fact_univ_enrolment }}, Graduates - {{ fact_univ_graduates }}"
+        - name: log - polytechnic
+          debug:
+            msg: "Polytechnic - Intake - {{ fact_univ_intake }}, Enrolment - {{ fact_poly_enrolment }}, Graduates - {{ fact_poly_graduates }}"
+        - name: log - total
+          debug:
+            msg: "Total - Intake {{ fact_univ_intake | int + fact_univ_intake | int }}, Enrolment - {{ fact_univ_enrolment | int + fact_poly_enrolment | int }}, Graduates - {{ fact_univ_graduates | int + fact_poly_graduates | int }}"
+      rescue:
+        - debug:
+            msg: "json - error"
+      always:
+        - debug:
+            msg: "json - no error"
+    # will work on csv method next
+    # - name:
+    #   block:
+    #   rescue:
+    #   always:
